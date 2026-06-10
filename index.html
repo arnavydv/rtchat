@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <style>
+        /* CSS: This makes the chat look nice */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .status {
+            font-size: 0.8em;
+            font-weight: normal;
+            margin-top: 5px;
+            color: #d4edda;
+        }
+
+        #messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #e5ddd5;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.95em;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.received {
+            background-color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.sent {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-top: 1px solid #ddd;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 1em;
+        }
+
+        #sendButton {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        #sendButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            Live Chat
+            <div class="status" id="status">Connecting...</div>
+        </div>
+        
+        <div id="messages">
+            <!-- Messages will appear here dynamically -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript: This handles the WebSocket connection and UI updates
+        
+        // 1. Connect to the Python WebSocket server (we'll build this next!)
+        // Port 8765 is the standard default for Python websockets tutorials
+        const ws = new WebSocket('ws://localhost:8000');
+        
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const statusDiv = document.getElementById('status');
+
+        // 2. When the connection is successfully opened
+        ws.onopen = function() {
+            statusDiv.textContent = '● Connected';
+            statusDiv.style.color = '#d4edda';
+        };
+
+        // 3. When we receive a message from the server
+        ws.onmessage = function(event) {
+            addMessage(event.data, 'received');
+        };
+
+        // 4. When the connection closes or errors out
+        ws.onclose = function() {
+            statusDiv.textContent = '○ Disconnected';
+            statusDiv.style.color = '#f8d7da';
+        };
+
+        // Function to add a message bubble to the screen
+        function addMessage(text, type) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', type);
+            messageElement.textContent = text;
+            messagesDiv.appendChild(messageElement);
+            
+            // Auto-scroll to the bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Function to send a message
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text !== '' && ws.readyState === WebSocket.OPEN) {
+                // Send to server
+                ws.send(text);
+                // Show on our own screen
+                addMessage(text, 'sent');
+                // Clear the input box
+                messageInput.value = '';
+            }
+        }
+
+        // Send when the button is clicked
+        sendButton.addEventListener('click', sendMessage);
+
+        // Send when the "Enter" key is pressed
+        messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

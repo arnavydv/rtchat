@@ -1,0 +1,9 @@
+---
+pid: 32936
+cwd: "C:\Users\Admin\Desktop\rtchat"
+command: "python server.py"
+started_at: 2026-06-21T17:58:08.240Z
+running_for_ms: 160006   
+---
+RTChat server running at http://localhost:8000
+Rooms: general, random, tech, gaming

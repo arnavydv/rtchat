@@ -1,65 +1,82 @@
-# rtchat
+# RTChat
 
-Real-time chat application using WebSockets (Python + browser UI).
+A real-time multi-user chat application built with Python WebSockets and a modern browser UI.
 
-## How it works
+## Features
 
-- The browser loads `index.html` and connects to the Python WebSocket server at:
-  - `ws://localhost:8000`
-- When you send a message from the browser UI, it is delivered to the server and printed in the server terminal.
-- The server terminal can send “reply” messages back to the connected browser client by typing into the server prompt.
+- **Multi-user chat** — everyone in a room sees messages instantly
+- **Chat rooms** — `#general`, `#random`, `#tech`, `#gaming`
+- **Usernames** — pick a name when you join
+- **Online presence** — see who's in the room
+- **Typing indicators** — know when someone is typing
+- **Message history** — last 100 messages per room are kept in memory
+- **Auto-reconnect** — client reconnects automatically if the connection drops
+- **Built-in web server** — no need to open `index.html` manually
 
 ## Prerequisites
 
-- Python 3.x
+- Python 3.10+
 - `websockets` package
 
 ## Setup
 
-Install dependencies:
-
 ```bash
-pip install websockets
+pip install -r requirements.txt
 ```
 
 ## Run
 
-1. Start the server:
+Start the server:
 
 ```bash
 python server.py
 ```
 
-2. Open the client in your browser:
+Open your browser to:
 
-- Open `index.html` (so it can connect to `ws://localhost:8000`)
+```
+http://localhost:8000
+```
 
-## Usage
+Open multiple tabs or share the URL with others on your network to chat together.
 
-- In the browser:
-  - Type a message in the input box and press **Send** (or press **Enter**).
-  - You will see your sent message and any received messages as chat bubbles.
-- In the terminal where `server.py` is running:
-  - When prompted with `Enter the reply message:`, type a reply and press Enter.
-  - That reply is sent back to the connected browser.
+## How it works
 
-## WebSocket message flow
+### Message protocol (JSON over WebSocket)
 
-- Browser → Server: `ws.send(text)`
-- Server → Browser: `websocket.send(reply)` (triggered from the server terminal input)
+| Type | Direction | Description |
+|------|-----------|-------------|
+| `join` | Client → Server | Join with username and room |
+| `chat` | Client → Server | Send a message |
+| `typing` | Client → Server | Typing on/off |
+| `switch_room` | Client → Server | Move to another room |
+| `welcome` | Server → Client | Join confirmation + history |
+| `chat` | Server → Client | Broadcast message |
+| `system` | Server → Client | Join/leave notifications |
+| `users` | Server → Client | Online user list |
+| `typing` | Server → Client | Someone is typing |
+| `room_changed` | Server → Client | Room switch confirmation |
+
+### Architecture
+
+```
+Browser clients  ←→  WebSocket server (port 8000)
+                          ├── Room: general
+                          ├── Room: random
+                          ├── Room: tech
+                          └── Room: gaming
+```
+
+Each room maintains its own message history and user list. Messages are broadcast to all connected clients in the same room.
 
 ## Troubleshooting
 
-- **Client shows “Connecting…” but never connects**
-  - Make sure `server.py` is running.
-  - Ensure the port `8000` is reachable on your machine.
-- **WebSocket connection failure**
-  - Confirm the URL is correct (`ws://localhost:8000`).
-  - Check that another process is not already using port `8000`.
-- **No replies arrive**
-  - Remember: replies are typed manually in the server terminal (the server doesn’t auto-respond).
+- **Can't connect** — make sure `python server.py` is running
+- **Port in use** — another process may be using port 8000; stop it or change the port in `server.py`
+- **Messages not appearing** — confirm you joined with a username (the login screen must be completed)
 
-## Notes / current limitations
+## Notes
 
-- This is a single-server, single-connection chat flow (not a multi-room chat system).
-- The server’s “reply” side is driven by interactive terminal input (`input()`), so it acts more like a demo than a fully automated chat bot.
+- Message history is stored in memory and resets when the server restarts
+- No authentication — usernames are chosen freely
+- Designed for local/LAN use; for production you'd want TLS, auth, and a persistent database

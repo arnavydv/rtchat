@@ -1,0 +1,32 @@
+---
+pid: 24584
+cwd: "C:\Users\Admin\Desktop\rtchat"
+command: "python server.py"
+started_at: 2026-06-21T17:56:56.706Z
+running_for_ms: 230004   
+---
+RTChat server running at http://localhost:8000
+Rooms: general, random, tech, gaming
+opening handshake failed
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\websockets\asyncio\server.py", line 356, in conn_handler
+    await connection.handshake(
+    ...<3 lines>...
+    )
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\websockets\asyncio\server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\websockets\asyncio\server.py", line 149, in handshake
+    response = await response
+               ^^^^^^^^^^^^^^
+  File "C:\Users\Admin\Desktop\rtchat\server.py", line 235, in process_request
+    return connection.respond(
+           ~~~~~~~~~~~~~~~~~~^
+        200,
+        ^^^^
+        body,
+        ^^^^^
+        headers=[("Content-Type", "text/html; charset=utf-8")],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ServerConnection.respond() got an unexpected keyword argument 'headers'

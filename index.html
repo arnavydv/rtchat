@@ -3,190 +3,699 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Chat</title>
+    <title>RTChat</title>
     <style>
-        /* CSS: This makes the chat look nice */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-2: #232733;
+            --border: #2e3345;
+            --text: #e8eaed;
+            --text-muted: #8b92a8;
+            --accent: #6c5ce7;
+            --accent-hover: #5a4bd1;
+            --accent-glow: rgba(108, 92, 231, 0.25);
+            --sent: #2d6a4f;
+            --received: #232733;
+            --system: #3d4459;
+            --online: #2ecc71;
+            --danger: #e74c3c;
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
-        .chat-container {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Login overlay */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0f1117 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
             width: 400px;
-            height: 600px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 90vw;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .login-card h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .login-card input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .login-card button:hover { background: var(--accent-hover); }
+        .login-card button:active { transform: scale(0.98); }
+
+        .login-error {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 12px;
+            min-height: 1.2em;
+        }
+
+        /* Main layout */
+        #app {
+            display: none;
+            height: 100vh;
+            grid-template-columns: 220px 1fr 200px;
+        }
+
+        /* Sidebar - rooms */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        .chat-header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2em;
+        .sidebar-header {
+            padding: 20px 16px 12px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
         }
 
-        .status {
-            font-size: 0.8em;
-            font-weight: normal;
-            margin-top: 5px;
-            color: #d4edda;
+        .room-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+
+        .room-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .room-btn:hover { background: var(--surface-2); color: var(--text); }
+        .room-btn.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; }
+        .room-btn .hash { opacity: 0.5; font-weight: 700; }
+
+        .user-panel {
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .user-list { flex: 1; overflow-y: auto; padding: 8px; }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .user-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--online);
+            flex-shrink: 0;
+        }
+
+        .user-item.me { color: var(--accent); font-weight: 600; }
+
+        /* Chat area */
+        .chat-main {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            min-width: 0;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .chat-header h2 span { color: var(--text-muted); font-weight: 400; }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.connected { background: var(--online); }
+        .status-dot.reconnecting { background: #f39c12; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         #messages {
             flex: 1;
-            padding: 15px;
             overflow-y: auto;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            background-color: #e5ddd5;
+            gap: 6px;
         }
 
-        .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 0.95em;
-            line-height: 1.4;
+        .msg-group {
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-group.sent { align-self: flex-end; align-items: flex-end; }
+        .msg-group.received { align-self: flex-start; align-items: flex-start; }
+        .msg-group.system { align-self: center; max-width: 100%; }
+
+        .msg-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            padding: 0 4px;
+        }
+
+        .msg-meta .name { font-weight: 600; color: var(--accent); }
+        .msg-group.sent .msg-meta .name { color: #81ecec; }
+
+        .msg-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            line-height: 1.45;
             word-wrap: break-word;
         }
 
-        .message.received {
-            background-color: white;
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
+        .msg-group.sent .msg-bubble {
+            background: var(--sent);
+            border-bottom-right-radius: 4px;
         }
 
-        .message.sent {
-            background-color: #dcf8c6;
-            align-self: flex-end;
-            border-bottom-right-radius: 5px;
+        .msg-group.received .msg-bubble {
+            background: var(--received);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-group.system .msg-bubble {
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-style: italic;
+            padding: 4px 12px;
+        }
+
+        .typing-indicator {
+            padding: 4px 24px 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+            min-height: 24px;
         }
 
         .input-area {
+            padding: 16px 24px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
             display: flex;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-top: 1px solid #ddd;
+            gap: 12px;
+            align-items: flex-end;
         }
 
         #messageInput {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
+            padding: 12px 18px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 0.95rem;
             outline: none;
-            font-size: 1em;
+            resize: none;
+            max-height: 120px;
+            line-height: 1.4;
+            transition: border-color 0.2s;
         }
+
+        #messageInput:focus { border-color: var(--accent); }
 
         #sendButton {
-            margin-left: 10px;
-            padding: 10px 20px;
-            background-color: #007bff;
+            padding: 12px 22px;
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 20px;
+            border-radius: var(--radius);
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
-        #sendButton:hover {
-            background-color: #0056b3;
+        #sendButton:hover { background: var(--accent-hover); }
+        #sendButton:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            #app { grid-template-columns: 1fr; }
+            .sidebar, .user-panel { display: none; }
+        }
+
+        #messages::-webkit-scrollbar,
+        .room-list::-webkit-scrollbar,
+        .user-list::-webkit-scrollbar { width: 6px; }
+        #messages::-webkit-scrollbar-thumb,
+        .room-list::-webkit-scrollbar-thumb,
+        .user-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <div class="chat-header">
-            Live Chat
-            <div class="status" id="status">Connecting...</div>
-        </div>
-        
-        <div id="messages">
-            <!-- Messages will appear here dynamically -->
-        </div>
-
-        <div class="input-area">
-            <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
-            <button id="sendButton">Send</button>
+    <div id="loginOverlay">
+        <div class="login-card">
+            <div class="login-logo">💬</div>
+            <h1>RTChat</h1>
+            <p>Real-time chat with rooms, live presence, and typing indicators</p>
+            <input type="text" id="usernameInput" placeholder="Choose a username" maxlength="24" autocomplete="off">
+            <button id="joinButton">Join Chat</button>
+            <div class="login-error" id="loginError"></div>
         </div>
     </div>
 
+    <div id="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">Rooms</div>
+            <div class="room-list" id="roomList"></div>
+        </aside>
+
+        <main class="chat-main">
+            <header class="chat-header">
+                <h2><span>#</span><span id="currentRoom">general</span></h2>
+                <div class="connection-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </header>
+
+            <div id="messages"></div>
+            <div class="typing-indicator" id="typingIndicator"></div>
+
+            <div class="input-area">
+                <textarea id="messageInput" placeholder="Message #general" rows="1" disabled></textarea>
+                <button id="sendButton" disabled>Send</button>
+            </div>
+        </main>
+
+        <aside class="user-panel">
+            <div class="sidebar-header">Online — <span id="userCount">0</span></div>
+            <div class="user-list" id="userList"></div>
+        </aside>
+    </div>
+
     <script>
-        // JavaScript: This handles the WebSocket connection and UI updates
-        
-        // 1. Connect to the Python WebSocket server (we'll build this next!)
-        // Port 8765 is the standard default for Python websockets tutorials
-        const ws = new WebSocket('ws://localhost:8000');
-        
+        const WS_URL = `ws://${location.hostname || 'localhost'}:8000`;
+        const RECONNECT_DELAY = 2000;
+
+        let ws = null;
+        let username = '';
+        let currentRoom = 'general';
+        let rooms = [];
+        let joined = false;
+        let reconnectTimer = null;
+        let typingTimer = null;
+        let isTyping = false;
+        const typingUsers = new Set();
+
+        const loginOverlay = document.getElementById('loginOverlay');
+        const app = document.getElementById('app');
+        const usernameInput = document.getElementById('usernameInput');
+        const joinButton = document.getElementById('joinButton');
+        const loginError = document.getElementById('loginError');
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
-        const statusDiv = document.getElementById('status');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const currentRoomEl = document.getElementById('currentRoom');
+        const roomList = document.getElementById('roomList');
+        const userList = document.getElementById('userList');
+        const userCount = document.getElementById('userCount');
+        const typingIndicator = document.getElementById('typingIndicator');
 
-        // 2. When the connection is successfully opened
-        ws.onopen = function() {
-            statusDiv.textContent = '● Connected';
-            statusDiv.style.color = '#d4edda';
-        };
+        function setStatus(state, text) {
+            statusDot.className = 'status-dot ' + state;
+            statusText.textContent = text;
+        }
 
-        // 3. When we receive a message from the server
-        ws.onmessage = function(event) {
-            addMessage(event.data, 'received');
-        };
+        function connect() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
 
-        // 4. When the connection closes or errors out
-        ws.onclose = function() {
-            statusDiv.textContent = '○ Disconnected';
-            statusDiv.style.color = '#f8d7da';
-        };
+            ws = new WebSocket(WS_URL);
 
-        // Function to add a message bubble to the screen
-        function addMessage(text, type) {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', type);
-            messageElement.textContent = text;
-            messagesDiv.appendChild(messageElement);
-            
-            // Auto-scroll to the bottom
+            ws.onopen = () => {
+                setStatus('connected', 'Connected');
+                if (joined) {
+                    ws.send(JSON.stringify({ type: 'join', username, room: currentRoom }));
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleServerMessage(data);
+            };
+
+            ws.onclose = () => {
+                setStatus('reconnecting', 'Reconnecting...');
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                clearTimeout(reconnectTimer);
+                reconnectTimer = setTimeout(connect, RECONNECT_DELAY);
+            };
+
+            ws.onerror = () => ws.close();
+        }
+
+        function handleServerMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    onWelcome(data);
+                    break;
+                case 'chat':
+                    addChatMessage(data);
+                    break;
+                case 'system':
+                    addSystemMessage(data.text, data.timestamp);
+                    break;
+                case 'users':
+                    renderUsers(data.users);
+                    break;
+                case 'typing':
+                    handleTyping(data);
+                    break;
+                case 'room_changed':
+                    onRoomChanged(data);
+                    break;
+                case 'error':
+                    if (!joined) {
+                        loginError.textContent = data.text;
+                    }
+                    break;
+            }
+        }
+
+        function onWelcome(data) {
+            joined = true;
+            username = data.username;
+            currentRoom = data.room;
+            rooms = data.rooms;
+
+            loginOverlay.style.display = 'none';
+            app.style.display = 'grid';
+
+            currentRoomEl.textContent = currentRoom;
+            messageInput.placeholder = `Message #${currentRoom}`;
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+
+            renderRooms();
+            messagesDiv.innerHTML = '';
+            data.history.forEach(addChatMessage);
+            renderUsers(data.users);
+            messageInput.focus();
+        }
+
+        function onRoomChanged(data) {
+            currentRoom = data.room;
+            currentRoomEl.textContent = currentRoom;
+            messageInput.placeholder = `Message #${currentRoom}`;
+            messagesDiv.innerHTML = '';
+            typingUsers.clear();
+            updateTypingIndicator();
+            data.history.forEach(addChatMessage);
+            renderUsers(data.users);
+            renderRooms();
+        }
+
+        function renderRooms() {
+            roomList.innerHTML = '';
+            rooms.forEach(room => {
+                const btn = document.createElement('button');
+                btn.className = 'room-btn' + (room === currentRoom ? ' active' : '');
+                btn.innerHTML = `<span class="hash">#</span> ${room}`;
+                btn.addEventListener('click', () => switchRoom(room));
+                roomList.appendChild(btn);
+            });
+        }
+
+        function switchRoom(room) {
+            if (room === currentRoom || !ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'switch_room', room }));
+        }
+
+        function renderUsers(users) {
+            userList.innerHTML = '';
+            userCount.textContent = users.length;
+            users.forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'user-item' + (name === username ? ' me' : '');
+                item.innerHTML = `<span class="user-dot"></span>${escapeHtml(name)}`;
+                userList.appendChild(item);
+            });
+        }
+
+        function formatTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addChatMessage(data) {
+            const isSent = data.username === username;
+            const group = document.createElement('div');
+            group.className = 'msg-group ' + (isSent ? 'sent' : 'received');
+
+            const meta = document.createElement('div');
+            meta.className = 'msg-meta';
+            meta.innerHTML = isSent
+                ? formatTime(data.timestamp)
+                : `<span class="name">${escapeHtml(data.username)}</span> · ${formatTime(data.timestamp)}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.textContent = data.text;
+
+            group.appendChild(meta);
+            group.appendChild(bubble);
+            messagesDiv.appendChild(group);
+            scrollToBottom();
+        }
+
+        function addSystemMessage(text, timestamp) {
+            const group = document.createElement('div');
+            group.className = 'msg-group system';
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            bubble.textContent = `${text} · ${formatTime(timestamp)}`;
+            group.appendChild(bubble);
+            messagesDiv.appendChild(group);
+            scrollToBottom();
+        }
+
+        function handleTyping(data) {
+            if (data.username === username) return;
+            if (data.is_typing) {
+                typingUsers.add(data.username);
+            } else {
+                typingUsers.delete(data.username);
+            }
+            updateTypingIndicator();
+        }
+
+        function updateTypingIndicator() {
+            const users = [...typingUsers];
+            if (users.length === 0) {
+                typingIndicator.textContent = '';
+            } else if (users.length === 1) {
+                typingIndicator.textContent = `${users[0]} is typing...`;
+            } else if (users.length === 2) {
+                typingIndicator.textContent = `${users[0]} and ${users[1]} are typing...`;
+            } else {
+                typingIndicator.textContent = 'Several people are typing...';
+            }
+        }
+
+        function scrollToBottom() {
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // Function to send a message
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function sendMessage() {
             const text = messageInput.value.trim();
-            if (text !== '' && ws.readyState === WebSocket.OPEN) {
-                // Send to server
-                ws.send(text);
-                // Show on our own screen
-                addMessage(text, 'sent');
-                // Clear the input box
-                messageInput.value = '';
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'chat', text }));
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            stopTyping();
+        }
+
+        function startTyping() {
+            if (!isTyping && ws && ws.readyState === WebSocket.OPEN) {
+                isTyping = true;
+                ws.send(JSON.stringify({ type: 'typing', is_typing: true }));
+            }
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(stopTyping, 2000);
+        }
+
+        function stopTyping() {
+            if (isTyping && ws && ws.readyState === WebSocket.OPEN) {
+                isTyping = false;
+                ws.send(JSON.stringify({ type: 'typing', is_typing: false }));
+            }
+            clearTimeout(typingTimer);
+        }
+
+        function join() {
+            const name = usernameInput.value.trim();
+            if (!name) {
+                loginError.textContent = 'Please enter a username';
+                return;
+            }
+            loginError.textContent = '';
+            username = name;
+            joined = false;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'join', username, room: currentRoom }));
+            } else {
+                connect();
             }
         }
 
-        // Send when the button is clicked
+        joinButton.addEventListener('click', join);
+        usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') join(); });
         sendButton.addEventListener('click', sendMessage);
 
-        // Send when the "Enter" key is pressed
-        messageInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            startTyping();
+        });
+
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
+
+        connect();
     </script>
 </body>
 </html>

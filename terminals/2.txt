@@ -1,0 +1,41 @@
+---
+pid: 12552
+cwd: "C:\Users\Admin\Desktop\rtchat"
+command: "Stop-Process -Id 24584 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; python server.py"
+started_at: 2026-06-21T17:57:47.429Z
+running_for_ms: 179995   
+---
+RTChat server running at http://localhost:8000Traceback (most recent call last):
+
+Rooms: general, random, tech, gaming
+  File "C:\Users\Admin\Desktop\rtchat\server.py", line 273, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\Desktop\rtchat\server.py", line 263, in main
+    async with serve(
+               ~~~~~^
+        handler,
+        ^^^^^^^^
+    ...<2 lines>...
+        process_request=process_request,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ):
+    ^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\websockets\asyncio\server.py", line 829, in __aenter__
+    return await self
+           ^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\site-packages\websockets\asyncio\server.py", line 847, in __await_impl__
+    server = await self.create_server
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py", line 1616, in create_server
+    raise OSError(err.errno, msg) from None
+OSError: [Errno 10048] error while attempting to bind on address ('::1', 8000, 0, 0): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
